@@ -1,0 +1,20 @@
+import { Routes, Route } from 'react-router-dom'
+import Dashboard from './pages/Dashboard.jsx'
+import BookWorkspace from './pages/BookWorkspace.jsx'
+import { supabaseConfigured } from './supabaseClient.js'
+
+export default function App() {
+  return (
+    <div className="min-h-screen">
+      {!supabaseConfigured && (
+        <div className="bg-blood-700 text-ink-950 font-ui text-sm text-center py-2 px-4">
+          Supabase isn't connected yet — see SETUP_GUIDE.md to add your project URL and key.
+        </div>
+      )}
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/book/:id" element={<BookWorkspace />} />
+      </Routes>
+    </div>
+  )
+}

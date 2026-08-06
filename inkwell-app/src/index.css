@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+
+body {
+  background: radial-gradient(ellipse at top, #1a1122 0%, #0a0710 60%);
+  background-attachment: fixed;
+  color: #ede4e0;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-ui { font-family: 'Inter', system-ui, sans-serif; }
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #120c1c; }
+::-webkit-scrollbar-thumb { background: #3d2850; border-radius: 6px; }
+
+.card {
+  background: linear-gradient(160deg, rgba(31,22,41,0.9), rgba(18,12,28,0.9));
+  border: 1px solid rgba(212,184,118,0.15);
+  border-radius: 0.75rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #c8324a, #7d1830);
+  color: #f5e9dc;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.btn-primary:hover { box-shadow: 0 0 20px rgba(200,50,74,0.4); }
+
+.btn-ghost {
+  background: rgba(212,184,118,0.08);
+  border: 1px solid rgba(212,184,118,0.25);
+  color: #e8cf9f;
+  font-family: 'Inter', sans-serif;
+}
+.btn-ghost:hover { background: rgba(212,184,118,0.15); }
+
+input, textarea, select {
+  background: rgba(10,7,16,0.6);
+  border: 1px solid rgba(212,184,118,0.15);
+  color: #ede4e0;
+  border-radius: 0.5rem;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: rgba(200,50,74,0.6);
+  box-shadow: 0 0 0 3px rgba(200,50,74,0.12);
+}
+
+label { font-family: 'Inter', sans-serif; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: #b8974f; }
