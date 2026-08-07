@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600&family=EB+Garamond:ital,wght@0,600;0,700;1,600&family=Libre+Baskerville:ital,wght@0,700;1,400&family=Cinzel:wght@600;900&family=Marcellus&family=Alegreya:ital,wght@0,700;0,900;1,700&family=Fraunces:ital,wght@0,600;0,900;1,600&family=Pirata+One&family=UnifrakturMaguntia&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,3 +99,64 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 9999px; }
 .book-theme.text-dark select { color: #241a2c; }
 .book-theme.text-dark ::placeholder { color: rgba(36,26,44,0.5); }
 .book-theme.text-dark .btn-ghost { color: #6b4f2a; border-color: rgba(36,26,44,0.35); }
+
+/* Per-book heading/title font selection */
+.book-theme .font-serif,
+.book-theme h1,
+.book-theme h2,
+.book-theme h3 {
+  font-family: var(--book-font, 'Playfair Display'), Georgia, serif;
+}
+
+/* ---- Shelf (dashboard) theming, mirrors .book-theme ---- */
+.shelf-theme { background-color: var(--shelf-bg, transparent); }
+.shelf-theme .card {
+  background-color: var(--shelf-bg, transparent);
+  background-image: var(--shelf-panel-bg, none);
+}
+.shelf-theme input, .shelf-theme textarea, .shelf-theme select {
+  background-color: var(--shelf-bg, transparent);
+  background-image: var(--shelf-panel-bg, none);
+}
+
+.shelf-theme.text-dark { color: #241a2c; }
+.shelf-theme.text-dark .text-gilt-300,
+.shelf-theme.text-dark .text-gilt-400,
+.shelf-theme.text-dark h1,
+.shelf-theme.text-dark h2,
+.shelf-theme.text-dark h3 { color: #241a2c; }
+.shelf-theme.text-dark label { color: #6b4f2a; }
+.shelf-theme.text-dark .text-ink-600 { color: #5b4f63; }
+.shelf-theme.text-dark input,
+.shelf-theme.text-dark textarea,
+.shelf-theme.text-dark select { color: #241a2c; }
+.shelf-theme.text-dark ::placeholder { color: rgba(36,26,44,0.5); }
+.shelf-theme.text-dark .btn-ghost { color: #6b4f2a; border-color: rgba(36,26,44,0.35); }
+
+/* Small gear-triggered settings panel used on the shelf and inside books */
+.settings-panel {
+  position: absolute;
+  z-index: 20;
+  top: 2.75rem;
+  right: 0;
+  width: 20rem;
+  max-width: 90vw;
+  background: #181022;
+  border: 1px solid rgba(212,184,118,0.2);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.gear-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(212,184,118,0.3);
+  background: rgba(212,184,118,0.08);
+  color: #e8cf9f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+.gear-btn:hover { background: rgba(212,184,118,0.18); }
