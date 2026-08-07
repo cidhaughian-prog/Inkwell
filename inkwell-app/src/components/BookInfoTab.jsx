@@ -1,8 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../supabaseClient.js'
 import { PALETTE } from '../lib/palette.js'
-
-const IMAGE_BUCKET = 'book-images'
 
 function Field({ label, value, onSave, textarea, placeholder }) {
   const [val, setVal] = useState(value || '')
@@ -22,66 +19,11 @@ function Field({ label, value, onSave, textarea, placeholder }) {
   )
 }
 
-function ImageSlot({ label, hint, book, urlField, pathField, onUpdate }) {
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState('')
-  const url = book[urlField]
-
-  async function handleFile(file) {
-    if (!file) return
-    setError('')
-    setUploading(true)
-    const oldPath = book[pathField]
-    const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
-    const path = `${book.id}/${urlField}-${Date.now()}-${safeName}`
-    const { error: upErr } = await supabase.storage.from(IMAGE_BUCKET).upload(path, file)
-    if (upErr) {
-      setError(`Couldn't upload: ${upErr.message}. Make sure you ran supabase_migration_v3_book_look.sql.`)
-      setUploading(false)
-      return
-    }
-    const { data: pub } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path)
-    await onUpdate(urlField, pub.publicUrl)
-    await onUpdate(pathField, path)
-    if (oldPath) await supabase.storage.from(IMAGE_BUCKET).remove([oldPath])
-    setUploading(false)
-  }
-
-  async function remove() {
-    if (book[pathField]) await supabase.storage.from(IMAGE_BUCKET).remove([book[pathField]])
-    await onUpdate(urlField, null)
-    await onUpdate(pathField, null)
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <label>{label}</label>
-        <div className="flex gap-2">
-          <label className="btn-ghost font-ui text-[10px] px-2 py-1 rounded cursor-pointer">
-            {uploading ? 'Uploading...' : url ? 'Replace' : 'Upload'}
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files[0])} />
-          </label>
-          {url && <button onClick={remove} className="btn-ghost font-ui text-[10px] px-2 py-1 rounded text-blood-400">Remove</button>}
-        </div>
-      </div>
-      {error && <p className="font-ui text-xs text-blood-400 mb-2">{error}</p>}
-      {url ? (
-        <img src={url} alt={label} className="w-full h-32 object-cover rounded-lg border border-gilt-500/15" />
-      ) : (
-        <div className="w-full h-20 rounded-lg border border-dashed border-gilt-500/20 flex items-center justify-center">
-          <p className="font-ui text-xs text-ink-600 opacity-60">{hint}</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function BookInfoTab({ book, onUpdate }) {
   return (
     <div className="card p-8 space-y-6">
       <div>
-        <label>Book color — tells this book apart on your shelf and in its tabs</label>
+        <label>Shelf cover color — how this book looks on your shelf</label>
         <div className="flex flex-wrap items-center gap-2 mt-2">
           {PALETTE.map((c) => (
             <button
@@ -108,23 +50,55 @@ export default function BookInfoTab({ book, onUpdate }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ImageSlot
-          label="Cover photo"
-          hint="Shows on your shelf + at the top of this book"
-          book={book}
-          urlField="cover_url"
-          pathField="cover_path"
-          onUpdate={onUpdate}
-        />
-        <ImageSlot
-          label="Background photo"
-          hint="Faded backdrop behind this book's workspace"
-          book={book}
-          urlField="background_url"
-          pathField="background_path"
-          onUpdate={onUpdate}
-        />
+      <div className="border-t border-gilt-500/10 pt-6">
+        <label>Book background — the actual background color inside this book (chapters, characters, everything)</label>
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {PALETTE.map((c) => (
+            <button
+              key={c.hex}
+              onClick={() => onUpdate('workspace_color', c.hex)}
+              title={c.name}
+              className="w-8 h-8 rounded-full transition-transform"
+              style={{
+                backgroundColor: c.hex,
+                outline: (book.workspace_color || '#150e1f') === c.hex ? '2px solid #ede4e0' : 'none',
+                outlineOffset: '2px',
+                transform: (book.workspace_color || '#150e1f') === c.hex ? 'scale(1.15)' : 'scale(1)',
+              }}
+            />
+          ))}
+          <span className="w-px h-6 bg-gilt-500/20 mx-1" />
+          <input
+            type="color"
+            value={book.workspace_color || '#150e1f'}
+            onChange={(e) => onUpdate('workspace_color', e.target.value)}
+            title="Pick any exact color"
+          />
+          <span className="font-ui text-[11px] text-ink-600 opacity-60">or pick any exact shade</span>
+        </div>
+
+        <div className="mt-4">
+          <label>Text color inside this book</label>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => onUpdate('text_mode', 'light')}
+              className={`font-ui text-xs px-3 py-1.5 rounded-full border ${
+                (book.text_mode || 'light') === 'light' ? 'border-gilt-400 text-gilt-300 bg-ink-800' : 'border-gilt-500/20 text-ink-600 opacity-70'
+              }`}
+            >
+              Light text
+            </button>
+            <button
+              onClick={() => onUpdate('text_mode', 'dark')}
+              className={`font-ui text-xs px-3 py-1.5 rounded-full border ${
+                book.text_mode === 'dark' ? 'border-gilt-400 text-gilt-300 bg-ink-800' : 'border-gilt-500/20 text-ink-600 opacity-70'
+              }`}
+            >
+              Dark text
+            </button>
+          </div>
+          <p className="font-ui text-[11px] text-ink-600 opacity-60 mt-1">Pick whichever stays readable against the background color above — light text for dark backgrounds, dark text for light ones.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
