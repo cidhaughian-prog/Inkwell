@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient.js'
 import { generateSuggestions } from '../lib/suggestionEngine.js'
 
-export default function BrainDumpTab({ bookId, characters }) {
+export default function BrainDumpTab({ bookId, characters, onCharactersChange }) {
   const [current, setCurrent] = useState('')
   const [archived, setArchived] = useState([])
   const [suggestions, setSuggestions] = useState([])
@@ -41,17 +41,28 @@ export default function BrainDumpTab({ bookId, characters }) {
     if (s.type === 'character') {
       const { data } = await supabase.from('characters').select('notes').eq('id', s.id).single()
       await supabase.from('characters').update({ notes: (data?.notes || '') + stamp }).eq('id', s.id)
+      setFeedback(`Added to ${s.label}.`)
     } else if (s.type === 'chapter') {
       const { data } = await supabase.from('chapters').select('outline').eq('id', s.id).single()
       await supabase.from('chapters').update({ outline: (data?.outline || '') + stamp }).eq('id', s.id)
+      setFeedback(`Added to ${s.label}.`)
     } else if (s.type === 'plot') {
       const { data } = await supabase.from('plot_points').select('notes').eq('id', s.id).single()
       await supabase.from('plot_points').update({ notes: (data?.notes || '') + stamp }).eq('id', s.id)
+      setFeedback(`Added to ${s.label}.`)
     } else if (s.type === 'world') {
       const { data } = await supabase.from('world_notes').select('content').eq('id', s.id).single()
       await supabase.from('world_notes').update({ content: (data?.content || '') + stamp }).eq('id', s.id)
+      setFeedback(`Added to ${s.label}.`)
+    } else if (s.type === 'new_character') {
+      const { data } = await supabase.from('characters').insert({
+        book_id: bookId, name: s.name, notes: `Created from brain dump (${new Date().toLocaleDateString()}):\n${current}`,
+      }).select().single()
+      if (data) {
+        onCharactersChange?.()
+        setFeedback(`Created new character "${s.name}" — go fill in their profile.`)
+      }
     }
-    setFeedback(`Added to ${s.label}.`)
   }
 
   async function archiveAndClear() {
@@ -91,7 +102,13 @@ export default function BrainDumpTab({ bookId, characters }) {
         {suggestions.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {suggestions.map((s, i) => (
-              <button key={i} onClick={() => acceptSuggestion(s)} className="font-ui text-xs px-3 py-1.5 rounded-full border border-gilt-500/30 text-gilt-300 hover:bg-blood-700/20">
+              <button
+                key={i}
+                onClick={() => acceptSuggestion(s)}
+                className={`font-ui text-xs px-3 py-1.5 rounded-full border hover:bg-blood-700/20 ${
+                  s.type === 'new_character' ? 'border-blood-500/50 text-blood-400' : 'border-gilt-500/30 text-gilt-300'
+                }`}
+              >
                 + {s.label}
               </button>
             ))}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient.js'
 
 const ROLES = ['Protagonist', 'Love Interest', 'Antagonist', 'Side Character']
+const IMAGE_BUCKET = 'character-images'
 
 function SavedField({ label, value, onSave, textarea, placeholder, small }) {
   const [val, setVal] = useState(value || '')
@@ -18,6 +19,73 @@ function SavedField({ label, value, onSave, textarea, placeholder, small }) {
         onChange={(e) => setVal(e.target.value)}
         onBlur={() => val !== (value || '') && onSave(val)}
       />
+    </div>
+  )
+}
+
+function Moodboard({ characterId }) {
+  const [images, setImages] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => { load() }, [characterId])
+
+  async function load() {
+    const { data } = await supabase.from('character_images').select('*').eq('character_id', characterId).order('created_at')
+    setImages(data || [])
+  }
+
+  async function handleFiles(fileList) {
+    setError('')
+    setUploading(true)
+    for (const file of Array.from(fileList)) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
+      const path = `${characterId}/${Date.now()}-${safeName}`
+      const { error: upErr } = await supabase.storage.from(IMAGE_BUCKET).upload(path, file)
+      if (upErr) {
+        setError(`Couldn't upload ${file.name}: ${upErr.message}. Make sure you ran supabase_migration_v2_images.sql.`)
+        continue
+      }
+      const { data: pub } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path)
+      const { data: row } = await supabase.from('character_images').insert({
+        character_id: characterId, url: pub.publicUrl, path,
+      }).select().single()
+      if (row) setImages((imgs) => [...imgs, row])
+    }
+    setUploading(false)
+  }
+
+  async function removeImage(img) {
+    await supabase.storage.from(IMAGE_BUCKET).remove([img.path])
+    await supabase.from('character_images').delete().eq('id', img.id)
+    setImages((imgs) => imgs.filter((i) => i.id !== img.id))
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label>Moodboard / face claim photos</label>
+        <label className="btn-ghost font-ui text-[10px] px-2 py-1 rounded cursor-pointer">
+          {uploading ? 'Uploading...' : '+ Upload photos'}
+          <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files.length && handleFiles(e.target.files)} />
+        </label>
+      </div>
+      {error && <p className="font-ui text-xs text-blood-400 mb-2">{error}</p>}
+      {images.length > 0 ? (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          {images.map((img) => (
+            <div key={img.id} className="relative group aspect-square rounded-lg overflow-hidden border border-gilt-500/15">
+              <img src={img.url} alt="" className="w-full h-full object-cover" />
+              <button
+                onClick={() => removeImage(img)}
+                className="absolute top-1 right-1 bg-ink-950/80 text-blood-400 rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="font-ui text-xs text-ink-600 opacity-60">No photos yet — upload reference images, face claims, aesthetic pulls, whatever helps you see them.</p>
+      )}
     </div>
   )
 }
@@ -57,7 +125,7 @@ export default function CharactersTab({ bookId, onCharactersChange }) {
   }
 
   async function deleteCharacter(cid) {
-    if (!confirm('Delete this character? This removes their family and relationship notes too.')) return
+    if (!confirm('Delete this character? This removes their family, relationship, and photo notes too.')) return
     await supabase.from('characters').delete().eq('id', cid)
     const next = characters.filter((c) => c.id !== cid)
     setCharacters(next)
@@ -128,6 +196,24 @@ export default function CharactersTab({ bookId, onCharactersChange }) {
               <SavedField label="Alias / Nickname" value={selected.alias} onSave={(v) => updateField('alias', v)} />
             </div>
             <button onClick={() => deleteCharacter(selected.id)} className="btn-ghost font-ui text-xs px-3 py-2 rounded-lg text-blood-400 mt-5">Delete</button>
+          </div>
+
+          <Moodboard characterId={selected.id} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SavedField
+              label="Pinterest board / mood link"
+              value={selected.pinterest_url}
+              onSave={(v) => updateField('pinterest_url', v)}
+              placeholder="https://pinterest.com/your-board"
+            />
+            {selected.pinterest_url && (
+              <div className="flex items-end pb-2">
+                <a href={selected.pinterest_url} target="_blank" rel="noreferrer" className="font-ui text-xs text-gilt-400 underline hover:text-blood-400">
+                  Open Pinterest board &rarr;
+                </a>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
