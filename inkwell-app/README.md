@@ -24,3 +24,4 @@ Run `supabase_schema.sql` in your Supabase project's SQL Editor before first use
 - Supabase (Postgres) as the database, called directly from the browser
 - react-router for navigation
 - No backend server required — deploys as a static site
+
