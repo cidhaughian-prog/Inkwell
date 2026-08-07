@@ -54,3 +54,48 @@ input:focus, textarea:focus, select:focus {
 }
 
 label { font-family: 'Inter', sans-serif; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: #b8974f; }
+
+/* Circular native color picker swatch, styled to match the palette dots */
+input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(212,184,118,0.3);
+  padding: 0;
+  cursor: pointer;
+  background: none;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; border-radius: 9999px; }
+input[type="color"]::-webkit-color-swatch { border: none; border-radius: 9999px; }
+input[type="color"]::-moz-color-swatch { border: none; border-radius: 9999px; }
+
+/* ---- Per-book theming ---- */
+/* Inside a book, --book-bg / --book-panel-bg are set inline on .book-theme.
+   Cards, inputs and textareas pick them up automatically; outside a book
+   (the shelf) they fall back to the original fixed dark palette. */
+
+.book-theme { background-color: var(--book-bg, transparent); }
+
+.book-theme .card,
+.book-theme input,
+.book-theme textarea,
+.book-theme select {
+  background-color: var(--book-bg, transparent);
+  background-image: var(--book-panel-bg, none);
+}
+
+.book-theme.text-dark { color: #241a2c; }
+.book-theme.text-dark .text-gilt-300,
+.book-theme.text-dark .text-gilt-400,
+.book-theme.text-dark h1,
+.book-theme.text-dark h2,
+.book-theme.text-dark h3 { color: #241a2c; }
+.book-theme.text-dark label { color: #6b4f2a; }
+.book-theme.text-dark .text-ink-600 { color: #5b4f63; }
+.book-theme.text-dark input,
+.book-theme.text-dark textarea,
+.book-theme.text-dark select { color: #241a2c; }
+.book-theme.text-dark ::placeholder { color: rgba(36,26,44,0.5); }
+.book-theme.text-dark .btn-ghost { color: #6b4f2a; border-color: rgba(36,26,44,0.35); }
