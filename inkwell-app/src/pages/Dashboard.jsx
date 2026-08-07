@@ -10,12 +10,41 @@ const STATUS_COLORS = {
   Complete: 'text-emerald-300 border-emerald-400/40',
 }
 
+function ColorPickerPopover({ value, onChange, onClose }) {
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="absolute z-10 top-10 right-3 card p-3 w-56 shadow-glow"
+      style={{ background: '#181022' }}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        {PALETTE.map((c) => (
+          <button
+            key={c.hex}
+            onClick={() => onChange(c.hex)}
+            title={c.name}
+            className="w-6 h-6 rounded-full"
+            style={{
+              backgroundColor: c.hex,
+              outline: value === c.hex ? '2px solid #ede4e0' : 'none',
+              outlineOffset: '2px',
+            }}
+          />
+        ))}
+        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} title="Pick any exact color" />
+      </div>
+      <button onClick={onClose} className="font-ui text-[10px] text-ink-600 opacity-70 hover:opacity-100 mt-2">Done</button>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [books, setBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newColor, setNewColor] = useState(PALETTE[0].hex)
+  const [editingColorId, setEditingColorId] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => { loadBooks() }, [])
@@ -33,6 +62,11 @@ export default function Dashboard() {
     if (!error && data) {
       navigate(`/book/${data.id}`)
     }
+  }
+
+  async function updateBookColor(bookId, color) {
+    setBooks((bs) => bs.map((b) => (b.id === bookId ? { ...b, accent_color: color } : b)))
+    await supabase.from('books').update({ accent_color: color }).eq('id', bookId)
   }
 
   return (
@@ -63,7 +97,7 @@ export default function Dashboard() {
             />
           </div>
           <div>
-            <label>Pick a color to tell this book apart on your shelf</label>
+            <label>Pick a cover color to tell this book apart on your shelf</label>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               {PALETTE.map((c) => (
                 <button
@@ -80,12 +114,7 @@ export default function Dashboard() {
                 />
               ))}
               <span className="w-px h-6 bg-gilt-500/20 mx-1" />
-              <input
-                type="color"
-                value={newColor}
-                onChange={(e) => setNewColor(e.target.value)}
-                title="Pick any exact color"
-              />
+              <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} title="Pick any exact color" />
               <span className="font-ui text-[11px] text-ink-600 opacity-60">or pick any exact shade</span>
             </div>
           </div>
@@ -105,38 +134,49 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {books.map((b) => (
-            <button
-              key={b.id}
-              onClick={() => navigate(`/book/${b.id}`)}
-              className="card text-left hover:shadow-glow transition-all group overflow-hidden"
-              style={{ borderColor: `${b.accent_color || '#c8324a'}55` }}
-            >
-              {b.cover_url ? (
-                <div
-                  className="h-28 w-full bg-cover bg-center relative"
-                  style={{ backgroundImage: `url(${b.cover_url})` }}
+          {books.map((b) => {
+            const accent = b.accent_color || '#c8324a'
+            return (
+              <div key={b.id} className="relative">
+                <button
+                  onClick={() => navigate(`/book/${b.id}`)}
+                  className="card text-left hover:shadow-glow transition-all group overflow-hidden w-full"
+                  style={{
+                    borderColor: `${accent}55`,
+                    backgroundColor: accent,
+                    backgroundImage: 'linear-gradient(160deg, rgba(0,0,0,0.15), rgba(0,0,0,0.55))',
+                  }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/40 to-transparent" />
-                </div>
-              ) : (
-                <div className="h-1.5 w-full" style={{ backgroundColor: b.accent_color || '#c8324a' }} />
-              )}
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <span className={`font-ui text-[10px] uppercase tracking-widest border rounded-full px-2 py-0.5 ${STATUS_COLORS[b.status] || 'text-ink-600 border-ink-600/40'}`}>
-                    {b.status || 'Idea'}
-                  </span>
-                  {b.series_name && (
-                    <span className="font-ui text-[10px] text-ink-600 opacity-70">{b.series_name} {b.book_number ? `#${b.book_number}` : ''}</span>
-                  )}
-                </div>
-                <h2 className="font-serif text-2xl text-gilt-300 group-hover:text-blood-400 transition-colors mb-2">{b.title}</h2>
-                <p className="font-ui text-xs text-ink-600 opacity-70">{b.genre || 'Dark Romance'}</p>
-                {b.blurb && <p className="font-body text-sm text-ink-600 opacity-80 mt-3 line-clamp-3">{b.blurb}</p>}
+                  <div className="p-6 min-h-[180px] flex flex-col">
+                    <div className="flex items-start justify-between mb-3">
+                      <span className={`font-ui text-[10px] uppercase tracking-widest border rounded-full px-2 py-0.5 bg-ink-950/40 ${STATUS_COLORS[b.status] || 'text-ink-100 border-ink-100/40'}`}>
+                        {b.status || 'Idea'}
+                      </span>
+                      {b.series_name && (
+                        <span className="font-ui text-[10px] text-ink-100 opacity-80">{b.series_name} {b.book_number ? `#${b.book_number}` : ''}</span>
+                      )}
+                    </div>
+                    <h2 className="font-serif text-2xl text-white drop-shadow mb-2">{b.title}</h2>
+                    <p className="font-ui text-xs text-white/80">{b.genre || 'Dark Romance'}</p>
+                    {b.blurb && <p className="font-body text-sm text-white/80 mt-3 line-clamp-3">{b.blurb}</p>}
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setEditingColorId(editingColorId === b.id ? null : b.id) }}
+                  title="Change cover color"
+                  className="absolute top-3 right-3 w-6 h-6 rounded-full border-2 border-white/70 shadow"
+                  style={{ backgroundColor: accent }}
+                />
+                {editingColorId === b.id && (
+                  <ColorPickerPopover
+                    value={accent}
+                    onChange={(c) => updateBookColor(b.id, c)}
+                    onClose={() => setEditingColorId(null)}
+                  />
+                )}
               </div>
-            </button>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
