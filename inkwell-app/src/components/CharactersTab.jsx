@@ -23,7 +23,7 @@ function SavedField({ label, value, onSave, textarea, placeholder, small }) {
   )
 }
 
-function Moodboard({ characterId }) {
+function Moodboard({ characterId, onImagesChange }) {
   const [images, setImages] = useState([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -53,12 +53,14 @@ function Moodboard({ characterId }) {
       if (row) setImages((imgs) => [...imgs, row])
     }
     setUploading(false)
+    onImagesChange?.()
   }
 
   async function removeImage(img) {
     await supabase.storage.from(IMAGE_BUCKET).remove([img.path])
     await supabase.from('character_images').delete().eq('id', img.id)
     setImages((imgs) => imgs.filter((i) => i.id !== img.id))
+    onImagesChange?.()
   }
 
   return (
@@ -95,6 +97,7 @@ export default function CharactersTab({ bookId, onCharactersChange }) {
   const [selectedId, setSelectedId] = useState(null)
   const [family, setFamily] = useState([])
   const [relationships, setRelationships] = useState([])
+  const [photoMap, setPhotoMap] = useState({})
 
   useEffect(() => { loadCharacters() }, [bookId])
   useEffect(() => { if (selectedId) { loadFamily(); loadRelationships() } }, [selectedId])
@@ -103,6 +106,20 @@ export default function CharactersTab({ bookId, onCharactersChange }) {
     const { data } = await supabase.from('characters').select('*').eq('book_id', bookId).order('created_at')
     setCharacters(data || [])
     if (data && data.length && !selectedId) setSelectedId(data[0].id)
+    await refreshPhotoMap((data || []).map((c) => c.id))
+  }
+
+  async function refreshPhotoMap(ids) {
+    const characterIds = ids || characters.map((c) => c.id)
+    if (!characterIds.length) { setPhotoMap({}); return }
+    const { data: imgs } = await supabase
+      .from('character_images')
+      .select('character_id, url, created_at')
+      .in('character_id', characterIds)
+      .order('created_at')
+    const map = {}
+    ;(imgs || []).forEach((img) => { if (!map[img.character_id]) map[img.character_id] = img.url })
+    setPhotoMap(map)
   }
 
   async function loadFamily() {
@@ -176,12 +193,21 @@ export default function CharactersTab({ bookId, onCharactersChange }) {
             <button
               key={c.id}
               onClick={() => setSelectedId(c.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg font-body text-lg transition-colors ${
+              className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg font-body text-lg transition-colors ${
                 selectedId === c.id ? 'bg-blood-700/30 text-gilt-300' : 'text-ink-600 hover:bg-ink-800'
               }`}
             >
-              {c.name || 'Unnamed'}
-              {c.role && <span className="block font-ui text-[10px] uppercase tracking-widest opacity-60">{c.role}</span>}
+              {photoMap[c.id] ? (
+                <img src={photoMap[c.id]} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 border border-gilt-500/20" />
+              ) : (
+                <span className="w-7 h-7 rounded-full bg-ink-800 border border-gilt-500/15 shrink-0 flex items-center justify-center font-ui text-[10px] text-ink-600 opacity-70">
+                  {(c.name || '?').charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span className="min-w-0">
+                <span className="block truncate">{c.name || 'Unnamed'}</span>
+                {c.role && <span className="block font-ui text-[10px] uppercase tracking-widest opacity-60">{c.role}</span>}
+              </span>
             </button>
           ))}
           {characters.length === 0 && <p className="font-ui text-xs text-ink-600 opacity-60 px-1">No characters yet.</p>}
@@ -198,23 +224,7 @@ export default function CharactersTab({ bookId, onCharactersChange }) {
             <button onClick={() => deleteCharacter(selected.id)} className="btn-ghost font-ui text-xs px-3 py-2 rounded-lg text-blood-400 mt-5">Delete</button>
           </div>
 
-          <Moodboard characterId={selected.id} />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SavedField
-              label="Pinterest board / mood link"
-              value={selected.pinterest_url}
-              onSave={(v) => updateField('pinterest_url', v)}
-              placeholder="https://pinterest.com/your-board"
-            />
-            {selected.pinterest_url && (
-              <div className="flex items-end pb-2">
-                <a href={selected.pinterest_url} target="_blank" rel="noreferrer" className="font-ui text-xs text-gilt-400 underline hover:text-blood-400">
-                  Open Pinterest board &rarr;
-                </a>
-              </div>
-            )}
-          </div>
+          <Moodboard characterId={selected.id} onImagesChange={() => refreshPhotoMap()} />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <SavedField label="Age" value={selected.age} onSave={(v) => updateField('age', v)} />
