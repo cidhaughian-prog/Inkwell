@@ -131,6 +131,11 @@ export default function Dashboard() {
 
   useEffect(() => { loadBooks(); loadSettings() }, [])
 
+  async function currentUserId() {
+    const { data } = await supabase.auth.getUser()
+    return data?.user?.id
+  }
+
   async function loadBooks() {
     setLoading(true)
     const { data, error } = await supabase.from('books').select('*').order('updated_at', { ascending: false })
@@ -139,18 +144,27 @@ export default function Dashboard() {
   }
 
   async function loadSettings() {
-    const { data } = await supabase.from('app_settings').select('*').eq('id', 1).single()
-    if (data) setSettings(data)
+    const uid = await currentUserId()
+    if (!uid) return
+    const { data } = await supabase.from('app_settings').select('*').eq('user_id', uid).maybeSingle()
+    setSettings(data || {})
   }
 
   async function updateSettings(fields) {
+    const uid = await currentUserId()
+    if (!uid) return
     setSettings((s) => ({ ...s, ...fields }))
-    await supabase.from('app_settings').update(fields).eq('id', 1)
+    await supabase.from('app_settings').upsert({ user_id: uid, ...fields }, { onConflict: 'user_id' })
+  }
+
+  async function logOut() {
+    await supabase.auth.signOut()
   }
 
   async function createBook() {
+    const uid = await currentUserId()
     const title = newTitle.trim() || 'Untitled Book'
-    const { data, error } = await supabase.from('books').insert({ title, accent_color: newColor }).select().single()
+    const { data, error } = await supabase.from('books').insert({ title, accent_color: newColor, user_id: uid }).select().single()
     if (!error && data) {
       navigate(`/book/${data.id}`)
     }
@@ -187,6 +201,7 @@ export default function Dashboard() {
             {settingsOpen && (
               <ShelfSettingsPanel settings={settings} onUpdate={updateSettings} onClose={() => setSettingsOpen(false)} />
             )}
+            <button onClick={logOut} title="Log out" className="btn-ghost font-ui text-xs px-3 py-2 rounded-lg">Log out</button>
           </div>
         </div>
 
