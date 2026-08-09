@@ -184,7 +184,7 @@ export default function BookWorkspace() {
 
         {tab === 'info' && <BookInfoTab book={book} onUpdate={updateBookField} />}
         {tab === 'characters' && <CharactersTab bookId={id} onCharactersChange={loadCharacters} />}
-        {tab === 'connections' && <ConnectionsTab characters={characters} />}
+        {tab === 'connections' && <ConnectionsTab characters={characters} bookId={id} />}
         {tab === 'plot' && <PlotArcTab bookId={id} />}
         {tab === 'chapters' && <ChaptersTab bookId={id} characters={characters} />}
         {tab === 'dump' && <BrainDumpTab bookId={id} characters={characters} onCharactersChange={loadCharacters} />}
