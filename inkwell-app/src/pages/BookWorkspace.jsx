@@ -5,6 +5,7 @@ import { PALETTE } from '../lib/palette.js'
 import { FONT_OPTIONS } from '../lib/fonts.js'
 import BookInfoTab from '../components/BookInfoTab.jsx'
 import CharactersTab from '../components/CharactersTab.jsx'
+import ConnectionsTab from '../components/ConnectionsTab.jsx'
 import PlotArcTab from '../components/PlotArcTab.jsx'
 import ChaptersTab from '../components/ChaptersTab.jsx'
 import BrainDumpTab from '../components/BrainDumpTab.jsx'
@@ -14,6 +15,7 @@ import TimelineTab from '../components/TimelineTab.jsx'
 const TABS = [
   { key: 'info', label: 'Book Info' },
   { key: 'characters', label: 'Characters' },
+  { key: 'connections', label: 'Connections' },
   { key: 'plot', label: 'Plot Arc' },
   { key: 'chapters', label: 'Chapters' },
   { key: 'dump', label: 'Brain Dump' },
@@ -141,7 +143,7 @@ export default function BookWorkspace() {
           <div className="flex items-center gap-3">
             <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: accent }} />
             <input
-              className="font-serif text-4xl bg-transparent border-none px-0 focus:ring-0 focus:shadow-none"
+              className="font-serif text-2xl sm:text-3xl md:text-4xl bg-transparent border-none px-0 focus:ring-0 focus:shadow-none min-w-0"
               style={{ background: 'transparent', color: isTitleDark ? '#241a2c' : '#e8cf9f', fontFamily: font.stack }}
               value={book.title || ''}
               onChange={(e) => updateBookField('title', e.target.value)}
@@ -182,6 +184,7 @@ export default function BookWorkspace() {
 
         {tab === 'info' && <BookInfoTab book={book} onUpdate={updateBookField} />}
         {tab === 'characters' && <CharactersTab bookId={id} onCharactersChange={loadCharacters} />}
+        {tab === 'connections' && <ConnectionsTab characters={characters} />}
         {tab === 'plot' && <PlotArcTab bookId={id} />}
         {tab === 'chapters' && <ChaptersTab bookId={id} characters={characters} />}
         {tab === 'dump' && <BrainDumpTab bookId={id} characters={characters} onCharactersChange={loadCharacters} />}
