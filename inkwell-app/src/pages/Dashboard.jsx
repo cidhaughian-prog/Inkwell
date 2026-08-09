@@ -14,7 +14,7 @@ const IMAGE_BUCKET = 'app-images'
 
 function ColorPickerPopover({ value, onChange, onClose }) {
   return (
-    <div onClick={(e) => e.stopPropagation()} className="absolute z-10 top-10 right-3 card p-3 w-56 shadow-glow" style={{ background: '#181022' }}>
+    <div onClick={(e) => e.stopPropagation()} className="absolute z-10 top-10 right-3 card p-3 w-56 max-w-[85vw] shadow-glow" style={{ background: '#181022' }}>
       <div className="flex flex-wrap items-center gap-2">
         {PALETTE.map((c) => (
           <button
@@ -175,6 +175,14 @@ export default function Dashboard() {
     await supabase.from('books').update({ accent_color: color }).eq('id', bookId)
   }
 
+  async function deleteBook(book) {
+    const ok = confirm(`Delete "${book.title || 'this book'}" for good? This removes its characters, chapters, and everything else in it. This can't be undone.`)
+    if (!ok) return
+    setBooks((bs) => bs.filter((b) => b.id !== book.id))
+    setEditingColorId(null)
+    await supabase.from('books').delete().eq('id', book.id)
+  }
+
   const isDarkText = settings.text_mode === 'dark'
   const shelfStyle = settings.background_url
     ? {
@@ -188,13 +196,13 @@ export default function Dashboard() {
   return (
     <div className={`min-h-screen shelf-theme ${isDarkText ? 'text-dark' : ''}`} style={shelfStyle}>
       <div className="max-w-6xl mx-auto px-6 py-14">
-        <div className="flex items-end justify-between mb-12 border-b border-gilt-500/15 pb-6">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-12 border-b border-gilt-500/15 pb-6">
           <div>
-            <h1 className="font-serif text-5xl text-gilt-300 tracking-wide">Inkwell</h1>
-            <p className="font-ui text-sm text-ink-600 text-opacity-80 mt-2 tracking-wide">your shelf of dark things not yet written</p>
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-gilt-300 tracking-wide">Inkwell</h1>
+            <p className="font-ui text-xs sm:text-sm text-ink-600 text-opacity-80 mt-2 tracking-wide">your shelf of dark things not yet written</p>
           </div>
-          <div className="flex items-center gap-2 relative">
-            <button className="btn-primary font-ui px-5 py-2.5 rounded-lg text-sm" onClick={() => setCreating(true)}>
+          <div className="flex flex-wrap items-center gap-2 relative">
+            <button className="btn-primary font-ui px-4 sm:px-5 py-2.5 rounded-lg text-sm" onClick={() => setCreating(true)}>
               + Start a new book
             </button>
             <button onClick={() => setSettingsOpen((v) => !v)} title="Shelf look settings" className="gear-btn">⚙</button>
@@ -290,6 +298,11 @@ export default function Dashboard() {
                     className="absolute top-3 right-3 w-6 h-6 rounded-full border-2 border-white/70 shadow"
                     style={{ backgroundColor: accent }}
                   />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteBook(b) }}
+                    title="Delete book"
+                    className="absolute top-3 right-11 w-6 h-6 rounded-full border-2 border-white/70 shadow bg-ink-950/70 text-white/90 hover:bg-blood-700 hover:border-blood-300 flex items-center justify-center text-xs leading-none"
+                  >✕</button>
                   {editingColorId === b.id && (
                     <ColorPickerPopover
                       value={accent}
